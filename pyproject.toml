@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rapidraw-ai-service"
+version = "0.1.0"
+description = "AI Service backend for RapidRAW image processing"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "RapidRAW Contributors"}
+]
+
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "pillow>=10.0.0",
+    "numpy>=1.24.0",
+    "python-multipart>=0.0.6",
+]
+
+[project.optional-dependencies]
+inference = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "onnxruntime>=1.16.0",
+]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/RSpeets/RapidRAW"
+Repository = "https://github.com/RSpeets/RapidRAW"
