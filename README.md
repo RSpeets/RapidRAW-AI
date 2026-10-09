@@ -1,4 +1,4 @@
-# RapidRAW AI Service
+# RapidRAW AI Service in Python
 
 A high-performance Python FastAPI backend for AI-powered image processing in [RapidRAW](https://github.com/RSpeets/RapidRAW). Provides intelligent image inpainting with smart cropping for full-resolution compositing.
 
