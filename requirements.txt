@@ -8,11 +8,11 @@ numpy>=1.24.0
 python-multipart>=0.0.6
 
 # PyTorch inference support
-torch>=2.0.0
-torchvision>=0.15.0
+# Note: torch, torchvision, and torchaudio are installed by setup scripts
+# to ensure the correct device-specific versions (CUDA, DirectML, or CPU)
 onnxruntime>=1.16.0
-diffusers>=0.24.0
-transformers>=4.35.0
+diffusers>=0.24.0,<0.30.0
+transformers>=4.35.0,<4.45.0
 safetensors>=0.4.0
 
 # Development dependencies

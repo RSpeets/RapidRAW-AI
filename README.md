@@ -13,22 +13,100 @@ A high-performance Python FastAPI backend for AI-powered image processing in [Ra
 
 ## Quick Start
 
-### 1. Setup (5 minutes)
+### Choose Your Setup
+
+Three setup scripts available for different scenarios:
+
+| Script | Best For | GPU Types | Installation Time |
+|--------|----------|-----------|-------------------|
+| **setup_env_cpu.ps1** | Development/testing | None (CPU only) | ~2-3 min |
+| **setup_env_cuda.ps1** | Production (NVIDIA) | NVIDIA GPUs only | ~5-10 min |
+| **setup_env_directml.ps1** | Any GPU on Windows | NVIDIA/AMD/Intel | ~3-5 min |
+
+---
+
+### Setup Option 1: CPU Only (Fastest Setup)
+
+Best for testing and development without GPU:
 
 ```powershell
 cd E:\Python\RapidRAW-AI
-.\setup_env.ps1
+.\setup_env_cpu.ps1
 ```
 
-This creates a virtual environment and installs all dependencies.
+- Works on any Windows PC  
+- Slower inference (1-2 minutes per image)
 
-### 2. Activate Environment
+---
+
+### Setup Option 2: CUDA (NVIDIA GPUs) — **Recommended for Production**
+
+For 10-50x faster inference with NVIDIA GPUs:
+
+```powershell
+cd E:\Python\RapidRAW-AI
+.\setup_env_cuda.ps1
+```
+
+**Prerequisites:**
+- NVIDIA GPU (GeForce RTX, RTX A-series, H-series, L-series, etc.)
+- NVIDIA drivers installed (check: run `nvidia-smi` in PowerShell)
+
+**Check your NVIDIA GPU:**
+```powershell
+nvidia-smi
+```
+
+If this command fails, install the latest NVIDIA drivers: https://www.nvidia.com/Download/driverDetails.aspx
+
+**Optional: Install CUDA Toolkit**
+
+Visit https://developer.nvidia.com/cuda-downloads and select:
+- OS: Windows
+- Architecture: x86_64
+- Version: 12.x or 11.8
+- Installer type: exe (local)
+
+*(The `setup_env_cuda.ps1` script will automatically install PyTorch with CUDA 12.1 support, with fallback to CUDA 11.8)*
+
+---
+
+### Setup Option 3: DirectML (Any GPU on Windows)
+
+For AMD, Intel, or NVIDIA GPUs on Windows without installing CUDA:
+
+```powershell
+cd E:\Python\RapidRAW-AI
+.\setup_env_directml.ps1
+```
+
+- Works with NVIDIA, AMD, Intel GPUs  
+- No CUDA toolkit installation needed  
+- Simpler setup than CUDA  
+- Slightly slower than CUDA on NVIDIA GPUs (~10-20%)
+
+**Best if:**
+- You have an AMD Radeon or Intel Arc/UHD GPU
+- You want GPU acceleration without installing CUDA
+- You want maximum compatibility across GPU types
+
+---
+
+### Summary Table: Performance & Setup
+
+| Option | GPU Speed | Setup Complexity | NVIDIA Only |
+|--------|-----------|------------------|------------|
+| CPU | 1x (baseline) | Easiest | No |
+| DirectML | ~15-20x | Easy | No |
+| CUDA | ~20-25x | Medium | Yes |
+
+### Activate Environment
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 ```
 
-### 3. Start the Service
+### Start the Service
 
 ```powershell
 python -m ai_service
@@ -38,12 +116,15 @@ You should see:
 ```
 INFO:     Started server process [xxxxx]
 INFO:ai_service.main:AI Service starting up...
-INFO:ai_service.models_manager:CUDA available: [Your GPU]
+INFO:ai_service.models_manager:Using device: cuda/cpu/directml
 INFO:ai_service.main:AI Service ready
 INFO:     Uvicorn running on http://127.0.0.1:8000
 ```
 
-### 4. Verify It Works
+**First Run Note:**
+On first run with GPU, models will be downloaded and cached (~4GB). Subsequent runs load instantly.
+
+### Verify It Works
 
 ```powershell
 # In another terminal
@@ -54,6 +135,13 @@ Response:
 ```json
 {"status":"healthy","version":"0.1.0"}
 ```
+
+**Check which device is being used:**
+```powershell
+curl http://127.0.0.1:8000/models/status
+```
+
+Look for your device type in the response (e.g., `"device": "cuda"` or `"device": "directml"`).
 
 **Done!** Service is running.
 
@@ -206,7 +294,89 @@ Current test coverage:
 
 ## Troubleshooting
 
-### "Module not found" error
+### CUDA Setup Issues
+
+#### CUDA not available / GPU not detected
+
+**Symptom:** Script shows `CUDA available: False` or you're getting slow CPU-only inference
+
+**Step 1: Verify your GPU and drivers**
+```powershell
+# Check if your GPU and drivers are detected
+nvidia-smi
+```
+
+If this fails:
+- Install NVIDIA drivers: https://www.nvidia.com/Download/driverDetails.aspx
+- Restart your computer after driver installation
+
+**Step 2: Install/Update CUDA Toolkit**
+Visit https://developer.nvidia.com/cuda-downloads and select:
+- OS: Windows
+- Architecture: x86_64  
+- Version: 12.x (recommended) or 11.8
+- Installer type: exe (local)
+
+**Step 3: Reinstall PyTorch with CUDA support**
+```powershell
+# Activate your environment
+.\.venv\Scripts\Activate.ps1
+
+# Reinstall with CUDA 12.1
+pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# If that fails, try CUDA 11.8
+pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+```
+
+**Step 4: Verify CUDA is working**
+```powershell
+python -c "import torch; print('CUDA available:', torch.cuda.is_available()); print('GPU:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'None')"
+```
+
+#### CUDA version mismatch
+
+**Symptom:** "CUDA runtime error" or "driver version is insufficient"
+
+**Solution:** Check your NVIDIA driver supports CUDA 12.1:
+```powershell
+nvidia-smi
+# Look at "CUDA Version" row (e.g., "12.1", "11.8")
+```
+
+Match your driver's CUDA version in the setup script or reinstall PyTorch with the correct version:
+```powershell
+# For CUDA 11.8
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# For CUDA 12.1
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+
+#### Out of memory error during inference
+
+**Symptom:** "CUDA out of memory" error during inpainting
+
+**Solutions:**
+```powershell
+# 1. Use fewer inference steps (trades speed for quality)
+$env:AI_INFERENCE_STEPS = "30"
+python -m ai_service
+
+# 2. Reduce inference resolution (if supported)
+$env:AI_INFERENCE_RESOLUTION = "384"
+python -m ai_service
+
+# 3. Use CPU instead (slower but uses system RAM)
+$env:AI_DEVICE = "cpu"
+python -m ai_service
+
+# 4. Close other GPU-using applications (Chrome, games, other AI tools)
+```
+
+### General Troubleshooting
+
+#### "Module not found" error
 
 ```powershell
 # Ensure you're in the virtual environment
@@ -216,34 +386,7 @@ Current test coverage:
 pip install -r requirements.txt
 ```
 
-### CUDA not available / GPU not detected
-
-```powershell
-# Check if PyTorch sees your GPU
-python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
-
-# If False, either:
-# 1. Install NVIDIA CUDA Toolkit + cuDNN
-# 2. Or use CPU:
-$env:AI_DEVICE = "cpu"
-python -m ai_service
-```
-
-### Out of memory error
-
-```powershell
-# CUDA out of memory usually means model is too large for GPU VRAM
-# Solutions:
-# 1. Use fewer inference steps
-$env:AI_INFERENCE_STEPS = "30"
-
-# 2. Use CPU (slower but uses RAM)
-$env:AI_DEVICE = "cpu"
-
-# 3. Close other GPU-using applications
-```
-
-### Service won't start
+#### Service won't start
 
 ```powershell
 # Check Python version (need 3.9+)
@@ -252,8 +395,33 @@ python --version
 # Verify PyTorch installation
 python -c "import torch; print('PyTorch:', torch.__version__)"
 
-# View full error
+# View full error log
 python -m ai_service
+```
+
+#### Slow inference (CPU fallback)
+
+If inference is very slow (5+ minutes):
+
+```powershell
+# Verify you're actually using GPU
+python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
+
+# If False, see "CUDA not available" section above
+# If True, check GPU utilization while running
+# Open Task Manager → Performance → GPU (should be >50%)
+```
+
+#### Port already in use
+
+If you get "Address already in use":
+```powershell
+# Change the port
+$env:AI_PORT = "8001"
+python -m ai_service
+
+# Or kill the existing process
+Get-Process python | Where-Object {$_.CommandLine -like "*ai_service*"} | Stop-Process
 ```
 
 ## Integration with RapidRAW
@@ -282,10 +450,10 @@ RapidRAW-AI/
 ├── tests/                   # Unit and integration tests
 │   └── test_api.py          # API endpoint tests
 ├── requirements.txt         # Python dependencies
-├── pyproject.toml          # Package metadata
-├── pytest.ini              # Test configuration
-├── setup_env.ps1           # Windows setup script
-└── README.md               # This file
+├── pyproject.toml           # Package metadata
+├── pytest.ini               # Test configuration
+├── setup_env_*.ps1          # Windows setup scripts
+└── README.md                # This file
 ```
 
 ## Python & Dependencies
@@ -347,7 +515,3 @@ For issues or feature requests, please open an issue on GitHub.
 - Review documentation in `/md` folder
 - Check service logs when running: `python -m ai_service`
 - Inspect debug output in `inpaint_debug/` folder
-
----
-
-**Ready to start?** → Run `.\setup_env.ps1`

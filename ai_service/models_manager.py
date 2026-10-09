@@ -51,7 +51,7 @@ class ModelManager:
         self._detect_device()
     
     def _detect_device(self):
-        """Auto-detect available device."""
+        """Auto-detect available device (CUDA, DirectML, or CPU)."""
         if not PYTORCH_AVAILABLE:
             self.device = "cpu"
             self.logger.info("Device: cpu (PyTorch not available)")
@@ -62,8 +62,13 @@ class ModelManager:
                 self.device = "cuda"
                 self.logger.info(f"CUDA available: {torch.cuda.get_device_name(0)}")
             else:
-                self.device = "cpu"
-                self.logger.info("CUDA not available, using CPU")
+                try:
+                    import torch_directml
+                    self.device = torch_directml.device()
+                    self.logger.info(f"DirectML available: GPU acceleration enabled via DirectML")
+                except ImportError:
+                    self.device = "cpu"
+                    self.logger.info("CUDA not available, DirectML not installed, using CPU")
         except Exception as e:
             self.device = "cpu"
             self.logger.warning(f"Error detecting device: {e}, using CPU")

@@ -8,11 +8,10 @@ version = "0.1.0"
 description = "AI Service backend for RapidRAW image processing"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
+license = {file = "LICENSE"}
 authors = [
     {name = "RapidRAW Contributors"}
 ]
-
 dependencies = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
@@ -25,8 +24,10 @@ dependencies = [
 
 [project.optional-dependencies]
 inference = [
-    "torch>=2.0.0",
-    "torchvision>=0.15.0",
+    "torch>=2.2.0,<2.6.0",
+    "torchvision>=0.17.0",
+    "diffusers>=0.25.0,<0.32.0",
+    "transformers>=4.36.0,<5.0.0",
     "onnxruntime>=1.16.0",
 ]
 dev = [
@@ -38,3 +39,6 @@ dev = [
 [project.urls]
 Homepage = "https://github.com/RSpeets/RapidRAW"
 Repository = "https://github.com/RSpeets/RapidRAW"
+
+[tool.setuptools]
+packages = ["ai_service"]

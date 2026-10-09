@@ -26,16 +26,13 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Virtual environment created" -ForegroundColor Green
 Write-Host ""
 
-# Activate virtual environment
-Write-Host "Activating virtual environment..."
-& ".\.venv\Scripts\Activate.ps1"
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "WARNING: Could not activate venv with script" -ForegroundColor Yellow
-}
+# Use venv Python for all subsequent commands
+$venvPython = ".\.venv\Scripts\python.exe"
+$venvPip = ".\.venv\Scripts\pip.exe"
 
 # Upgrade pip
 Write-Host "Upgrading pip, setuptools, and wheel..."
-python -m pip install --upgrade pip setuptools wheel
+& $venvPip install --upgrade pip setuptools wheel
 if ($LASTEXITCODE -ne 0) {
     Write-Host "WARNING: Failed to upgrade pip" -ForegroundColor Yellow
 }
@@ -44,7 +41,7 @@ Write-Host ""
 
 # Install dependencies
 Write-Host "Installing requirements from requirements.txt..."
-pip install -r requirements.txt
+& $venvPip install -r requirements.txt
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Failed to install requirements" -ForegroundColor Red
     exit 1
@@ -52,9 +49,29 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Requirements installed" -ForegroundColor Green
 Write-Host ""
 
+# Install CPU PyTorch
+Write-Host "Installing PyTorch (CPU)..."
+& $venvPip install torch torchvision torchaudio
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: Failed to install PyTorch" -ForegroundColor Red
+    exit 1
+}
+Write-Host "PyTorch installed" -ForegroundColor Green
+Write-Host ""
+
+# Install compatible diffusers and transformers versions
+Write-Host "Installing compatible diffusers and transformers versions..."
+& $venvPip install "diffusers>=0.24.0,<0.30.0" "transformers>=4.35.0,<4.45.0"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: Failed to install compatible diffusers/transformers" -ForegroundColor Red
+    exit 1
+}
+Write-Host "Compatible versions installed" -ForegroundColor Green
+Write-Host ""
+
 # Install in development mode
 Write-Host "Installing ai_service in development mode..."
-pip install -e .
+& $venvPip install -e .
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Failed to install ai_service in dev mode" -ForegroundColor Red
     exit 1
@@ -64,11 +81,11 @@ Write-Host ""
 
 # Test PyTorch installation
 Write-Host "Testing PyTorch installation..."
-python -c "import torch; print('PyTorch installed')"
+& $venvPython -c "import torch; print('PyTorch installed')"
 if ($LASTEXITCODE -ne 0) {
     Write-Host "WARNING: PyTorch not installed or failed to import" -ForegroundColor Yellow
 } else {
-    python -c "import torch; print('CUDA available: ' + str(torch.cuda.is_available()))"
+    & $venvPython -c "import torch; print('CUDA available: ' + str(torch.cuda.is_available()))"
 }
 
 Write-Host ""
