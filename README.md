@@ -16,7 +16,6 @@ A high-performance Python FastAPI backend for AI-powered image processing in [Ra
 ### 1. Setup (5 minutes)
 
 ```powershell
-cd E:\Python\RapidRAW-AI
 .\setup_env.ps1
 ```
 
